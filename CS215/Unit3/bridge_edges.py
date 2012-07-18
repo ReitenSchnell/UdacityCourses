@@ -75,7 +75,6 @@ def test_create_rooted_spanning_tree():
          'g': {'e': 1, 'f': 1}
          }
     S = create_rooted_spanning_tree(G, "a")
-    print S
     assert S == {'a': {'c': 'green', 'b': 'green'},
                  'b': {'a': 'green', 'd': 'red'},
                  'c': {'a': 'green', 'd': 'green'},
@@ -86,12 +85,29 @@ def test_create_rooted_spanning_tree():
                  }
 
 ###########
-test_create_rooted_spanning_tree()
 
 def post_order(S, root):
     # return mapping between nodes of S and the post-order value
     # of that node
-    pass
+    result = {}
+    result[root] = get_post_order(S, root, None, 0, result)
+    return result
+
+def get_post_order(G, node, parent, current, po):
+    children = get_children(G, node, parent)
+    for child in children:
+        current = get_post_order(G, child, node, current, po)
+    current += 1
+    po[node] = current
+    return current
+
+def get_children(G, node, parent):
+        lst = []
+        for child in G[node]:
+            if child is not parent and G[node][child] != 'red':
+                lst.append(child)
+        return sorted(lst)
+
 
 # This is just one possible solution
 # There are other ways to create a
@@ -116,7 +132,17 @@ def test_post_order():
 def number_of_descendants(S, root):
     # return mapping between nodes of S and the number of descendants
     # of that node
-    pass
+    result = {}
+    result[root] = get_desc_number(S, root, None, result)
+    return result
+
+def get_desc_number(G, node, parent, po):
+    children = get_children(G, node, parent)
+    result = 1
+    for child in children:
+        result += get_desc_number(G, child, node, po)
+    po[node] = result
+    return result
 
 def test_number_of_descendants():
     S =  {'a': {'c': 'green', 'b': 'green'},
@@ -129,15 +155,43 @@ def test_number_of_descendants():
           }
     nd = number_of_descendants(S, 'a')
     assert nd == {'a':7, 'b':1, 'c':5, 'd':4, 'e':3, 'f':1, 'g':1}
-
 ###############
+
 
 def lowest_post_order(S, root, po):
     # return a mapping of the nodes in S
     # to the lowest post order value
     # below that node
     # (and you're allowed to follow 1 red edge)
-    pass
+    result = {}
+    result[root] = get_low_number(S, root, None, po, result)
+    return result
+
+def get_low_number(G, node, parent, po, lo):
+    children = get_children(G, node, parent)
+    red_children = [c for c in G[node] if G[node][c] == 'red']
+    result = []
+    if red_children:
+        result.append(po[red_children[0]])
+    result.append(po[node])
+    for child in children:
+        result.append(get_low_number(G, child, node, po, lo))
+    val = min(result)
+    lo[node] = val
+    return val
+
+def get_high_number(G, node, parent, po, lo):
+    children = get_children(G, node, parent)
+    red_children = [c for c in G[node] if G[node][c] == 'red']
+    result = []
+    if red_children:
+        result.append(po[red_children[0]])
+    result.append(po[node])
+    for child in children:
+        result.append(get_high_number(G, child, node, po, lo))
+    val = max(result)
+    lo[node] = val
+    return val
 
 def test_lowest_post_order():
     S = {'a': {'c': 'green', 'b': 'green'},
@@ -150,17 +204,17 @@ def test_lowest_post_order():
          }
     po = post_order(S, 'a')
     l = lowest_post_order(S, 'a', po)
+    print l
     assert l == {'a':1, 'b':1, 'c':1, 'd':1, 'e':2, 'f':2, 'g':2}
 
 
 ################
 
+
 def highest_post_order(S, root, po):
-    # return a mapping of the nodes in S
-    # to the highest post order value
-    # below that node
-    # (and you're allowed to follow 1 red edge)
-    pass
+    result = {}
+    result[root] = get_high_number(S, root, None, po, result)
+    return result
 
 def test_highest_post_order():
     S = {'a': {'c': 'green', 'b': 'green'},
@@ -177,11 +231,23 @@ def test_highest_post_order():
 
 #################
 
+
 def bridge_edges(G, root):
     # use the four functions above
     # and then determine which edges in G are bridge edges
     # return them as a list of tuples ie: [(n1, n2), (n4, n5)]
-    pass
+    S = create_rooted_spanning_tree(G, root)
+    po = post_order(S, root)
+    print po
+    nd = number_of_descendants(S, root)
+    print nd
+    lo = lowest_post_order(S, root, po)
+    print lo
+    ho = highest_post_order(S, root, po)
+    print ho
+    nodes = [node for node in po if ho[node] <= po[node] and lo[node] > po[node] - nd[node] and node is not root]
+    print nodes
+
 
 def test_bridge_edges():
     G = {'a': {'c': 1, 'b': 1},
@@ -195,3 +261,9 @@ def test_bridge_edges():
     bridges = bridge_edges(G, 'a')
     assert bridges == [('d', 'e')]
 
+test_create_rooted_spanning_tree()
+test_post_order()
+test_number_of_descendants()
+test_lowest_post_order()
+test_highest_post_order()
+test_bridge_edges()
