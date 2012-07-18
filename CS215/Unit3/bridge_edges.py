@@ -134,7 +134,6 @@ def test_lowest_post_order():
          }
     po = post_order(S, 'a')
     l = lowest_post_order(S, 'a', po)
-    print l
     assert l == {'a':1, 'b':1, 'c':1, 'd':1, 'e':2, 'f':2, 'g':2}
 
 
@@ -159,15 +158,27 @@ def test_highest_post_order():
 def bridge_edges(G, root):
     S = create_rooted_spanning_tree(G, root)
     po = post_order(S, root)
-    print po
     nd = number_of_descendants(S, root)
-    print nd
     lo = lowest_post_order(S, root, po)
-    print lo
     ho = highest_post_order(S, root, po)
-    print ho
     nodes = [node for node in po if ho[node] <= po[node] and lo[node] > po[node] - nd[node] and node is not root]
-    print nodes
+    edges = []
+    for node in nodes:
+        edges.append((find_parent(G, root, node), node))
+    return edges
+
+def find_parent(G, root, node):
+    open_list = [root]
+    checked = []
+    while len(open_list):
+        current = open_list.pop(0)
+        for child in G[current]:
+            if child == node:
+                return current
+            if child not in checked:
+                open_list.append(child)
+        checked.append(current)
+
 
 def test_bridge_edges():
     G = {'a': {'c': 1, 'b': 1},
