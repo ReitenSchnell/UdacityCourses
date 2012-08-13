@@ -1,0 +1,20 @@
+import math
+import pylab
+
+def calculate_binomial(p, n):
+    result = []
+    for k in range(n+1):
+        pk = (p**k)*((1-p)**(n-k))*math.factorial(n)/(math.factorial(k)*math.factorial(n-k))
+        result.append(pk)
+    return result
+
+def get_critical(p_list, threshold):
+    sum = 0
+    for i in range(len(p_list)):
+        sum += p_list[i]
+        if sum >= threshold:
+            return i
+
+binomial = calculate_binomial(0.8, 10)
+pylab.plot(range(len(binomial)), binomial)
+print get_critical(binomial, 0.05)
