@@ -4,7 +4,6 @@ def minimize_absolute(L):
         ind, L = arrange_array(ind, L)
     return ind
 
-
 def arrange_array(ind, A):
     val = A[ind]
     bigger =  [A[i] for i in range(len(A)) if A[i] > val and i != ind]
