@@ -96,7 +96,6 @@ def dijkstra(G,v):
                 if not x_node:
                     add_value_to_heap(dist_so_far, (x, final_dist[node_name] + G[node_name][x]))
                 elif final_dist[node_name] + G[node_name][x] < x_node[1]:
-                    remove_node_and_rebuild(dist_so_far, x_node)
                     add_value_to_heap(dist_so_far, (x, final_dist[node_name] + G[node_name][x]))
     return final_dist
 
