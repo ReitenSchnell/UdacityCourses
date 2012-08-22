@@ -1,4 +1,4 @@
-from unittest.case import TestCase
+from unittest import TestCase
 
 def parent(i):
     return (i-1)/2
@@ -96,7 +96,9 @@ def dijkstra(G,v):
                 if not x_node:
                     add_value_to_heap(dist_so_far, (x, final_dist[node_name] + G[node_name][x]))
                 elif final_dist[node_name] + G[node_name][x] < x_node[1]:
-                    add_value_to_heap(dist_so_far, (x, final_dist[node_name] + G[node_name][x]))
+                    #add_value_to_heap(dist_so_far, (x, final_dist[node_name] + G[node_name][x]))
+                    dist_so_far[dist_so_far.index(x_node)] = (x, final_dist[node_name] + G[node_name][x])
+        print final_dist
     return final_dist
 
 def make_link(G, node1, node2, w):
