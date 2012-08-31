@@ -1,0 +1,4 @@
+Char1	Book1
+Char1	Book2
+Char2	Book1
+Char2	Book2
