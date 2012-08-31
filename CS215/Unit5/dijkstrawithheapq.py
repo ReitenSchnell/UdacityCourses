@@ -7,7 +7,6 @@ def dijkstra(G,v):
     heappush(els,(0,v))
     while len(final_dist) < len(G) and len(els) :
         value,w = heappop(els)
-        # lock it down!
         if w not in final_dist:
             final_dist[w] = dist_so_far[w]
             del dist_so_far[w]
