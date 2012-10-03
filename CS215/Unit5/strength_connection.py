@@ -1,4 +1,5 @@
 from _heapq import heappush, heappop
+from copy import copy, deepcopy
 import heapq
 from time import time
 from unittest import TestCase
@@ -6,6 +7,21 @@ from unittest import TestCase
 filename = 'marvel'
 
 charactersForSearch = ['SPIDER-MAN/PETER PAR', 'GREEN GOBLIN/NORMAN ', 'WOLVERINE/LOGAN ','PROFESSOR X/CHARLES ', 'CAPTAIN AMERICA']
+
+def get_characters_from_file(filename):
+    f = open(filename)
+    lines =  f.readlines()
+    f.close()
+    marvelG = {}
+    characters = []
+    old_char = ''
+    for line in lines:
+        char, book = line.replace('\n', '').replace('"', '').split('\t')
+        make_link(marvelG, char, book, 1)
+        if char != old_char:
+            characters.append(char)
+        old_char = char
+    return marvelG, characters
 
 def make_weighted_link(G, node1, node2):
     if node1 not in G:
@@ -31,21 +47,6 @@ def make_link(G, node1, node2, weight):
     (G[node2])[node1] = weight
     return G
 
-def get_characters_from_file(filename):
-    f = open(filename)
-    lines =  f.readlines()
-    f.close()
-    marvelG = {}
-    characters = []
-    old_char = ''
-    for line in lines:
-        char, book = line.replace('\n', '').split('\t')
-        make_link(marvelG, char, book, 1)
-        if char != old_char:
-            characters.append(char)
-        old_char = char
-    return marvelG, characters
-
 def make_char_graph(bookG, characters):
     charsG = {}
     for char1 in characters:
@@ -55,22 +56,22 @@ def make_char_graph(bookG, characters):
                     make_weighted_link(charsG, char1, char2)
     return charsG
 
-def get_top_k_edges(k, bookG):
-    heap = []
-    for char1 in bookG:
-        for char2 in bookG[char1]:
-            if char1 < char2:
-                value = bookG[char1][char2]
-                if len(heap) < k:
-                    heapq.heappush(heap,(value, (char1, char2)))
-                else:
-                    if value > heap[0][0]:
-                        heapq.heappop(heap)
-                        heapq.heappush(heap,(value, (char1, char2)))
-    return heap
+def transform_graph_to_weighted(g):
+    G = deepcopy(g)
+    for char1 in G:
+        for char2 in G[char1]:
+            G[char1][char2] = 1.0/G[char1][char2]
+    return G
 
-def find_shortest_path(G, v, calc_len):
-    dist_so_far = {v: 0}
+def transform_graph_to_unweighted(g):
+    G = deepcopy(g)
+    for char1 in G:
+        for char2 in G[char1]:
+            G[char1][char2] = 1.0
+    return G
+
+def find_shortest_path(G, v):
+    dist_so_far = {v: [0,[v]]}
     final_dist = {}
     heap=[]
     heappush(heap,(0,v))
@@ -81,37 +82,37 @@ def find_shortest_path(G, v, calc_len):
             del dist_so_far[w]
             for x in G[w]:
                 if x not in final_dist:
-                    path_len = calc_len(G[w][x])
+                    path_len = G[w][x]
                     if x not in dist_so_far:
-                        dist_so_far[x] = final_dist[w] + path_len
-                        heappush(heap,(final_dist[w] + path_len, x))
-                    elif final_dist[w] + path_len < dist_so_far[x]:
-                        dist_so_far[x] = final_dist[w] + path_len
-                        heappush(heap,(final_dist[w] + path_len, x))
+                        dist_so_far[x] = []
+                        dist_so_far[x].append(final_dist[w][0] + path_len)
+                        dist_so_far[x].append(final_dist[w][1] + [x])
+                        heappush(heap,(final_dist[w][0] + path_len, x))
+                    elif final_dist[w][0] + path_len < dist_so_far[x][0]:
+                        dist_so_far[x][0] = final_dist[w][0] + path_len
+                        dist_so_far[x][1] = final_dist[w][1] + [x]
+                        heappush(heap,(final_dist[w][0] + path_len, x))
     return final_dist
-
-def get_inverse_len(weight):
-    return float(1.0/weight)
-
-def get_len_by_hop(weight):
-    return 1
 
 def main():
     time1 =  time()
     bookG, chars = get_characters_from_file(filename)
     charsG = make_char_graph(bookG, chars)
+    weighted = transform_graph_to_weighted(charsG)
+    unweighted = transform_graph_to_unweighted(charsG)
     result = 0
     for char in charactersForSearch:
-        dist1 = find_shortest_path(charsG, char, get_inverse_len)
-        dist2 = find_shortest_path(charsG, char, get_len_by_hop)
-        for i in range(len(dist1)):
-            if dist1.items()[i] != dist2.items()[i]:
-                result +=1
+        dist_weighted = find_shortest_path(weighted, char)
+        dist_unweighted = find_shortest_path(unweighted, char)
+        current_sum = 0
+        for ch in dist_unweighted:
+            if len(dist_unweighted[ch][1]) != len(dist_weighted[ch][1]):
+                current_sum+= 1
+        result += current_sum
+        print 'Count for '+char+' is '+str(current_sum)
     print result
     time2 = time()
     print time2 - time1
-
-main()
 
 class TestCases(TestCase):
     def test_should_add_link_to_empty_graph_for_first_node(self):
@@ -183,32 +184,47 @@ class TestCases(TestCase):
         self.assertEqual(1, p)
         self.assertEqual([2,4,5,9], h)
 
-    def test_get_top_k_edges_should_return_3_top_weighted_edges(self):
-        a,b,c,d,e,f = 'a', 'b', 'c', 'd', 'e', 'f'
-        graph = {a:{b:2, c:4}, b:{a:2, d:5, e:1}, c:{a:4, f:7}, d:{b:5}, e:{b:1}, f:{c:7}}
-        result = get_top_k_edges(3, graph)
-        self.assertEqual([(4, (a,c)), (7, (c,f)), (5, (b,d))] ,result)
 
-    def test_find_shortest_path_by_weight_sums(self):
+    def test_find_shortest_path(self):
         (a,b,c) = ('A', 'B', 'C')
-        triples = ((a,b,1), (a,c,2), (b,c,3))
+        triples = ((a,b,1), (a,c,3), (b,c,1))
         G = {}
         for (i,j,k) in triples:
             make_link(G, i, j, k)
 
-        dist = find_shortest_path(G, a, get_inverse_len)
+        dist = find_shortest_path(G, a)
 
-        self.assertAlmostEqual(5.0/6.0, dist[b])
-        self.assertEqual(1.0/2.0, dist[c])
+        self.assertEqual(dist[b][0], 1)
+        self.assertEqual(dist[b][1], [a,b])
+        self.assertEqual(dist[c][0], 2)
+        self.assertEqual(dist[c][1], [a,b,c])
 
-    def test_find_shortest_path_by_hops(self):
+    def test_transform_graph_to_weighted(self):
         (a,b,c) = ('A', 'B', 'C')
-        triples = ((a,b,1), (a,c,2), (b,c,3))
+        triples = ((a,b,1), (a,c,3), (b,c,1))
         G = {}
         for (i,j,k) in triples:
             make_link(G, i, j, k)
 
-        dist = find_shortest_path(G, a, get_len_by_hop)
+        t = transform_graph_to_weighted(G)
+        self.assertEqual(1, t[a][b])
+        self.assertEqual(1, t[b][a])
+        self.assertEqual(1, t[b][c])
+        self.assertEqual(1, t[c][b])
+        self.assertEqual(1/3, t[a][c])
+        self.assertEqual(1/3, t[c][a])
 
-        self.assertAlmostEqual(1, dist[b])
-        self.assertEqual(1, dist[c])
+    def test_transform_graph_to_weighted(self):
+        (a,b,c) = ('A', 'B', 'C')
+        triples = ((a,b,2), (a,c,3), (b,c,4))
+        G = {}
+        for (i,j,k) in triples:
+            make_link(G, i, j, k)
+
+        t = transform_graph_to_unweighted(G)
+        self.assertEqual(1, t[a][b])
+        self.assertEqual(1, t[b][a])
+        self.assertEqual(1, t[b][c])
+        self.assertEqual(1, t[c][b])
+        self.assertEqual(1, t[a][c])
+        self.assertEqual(1, t[c][a])
