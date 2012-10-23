@@ -92,11 +92,11 @@ def main():
     G, characters = get_characters_from_file(filename)
     weights = get_weights(weights_filename)
     G = make_char_graph(G, characters, weights)
-#    for t in obscure_test.test:
-#        start, finish = t
-#        dist = find_shortest_path(G, start)
-#        print dist[finish][0] == obscure_test.test[t]
-    for t in obscure_test.answer:
+    for t in obscure_test.test:
+        start, finish = t
+        dist = find_shortest_path(G, start)
+        print dist[finish][0] == obscure_test.test[t]
+    for t in sorted(obscure_test.answer):
         start, finish = t
         dist = find_shortest_path(G, start)
         print dist[finish]
