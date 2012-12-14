@@ -11,12 +11,27 @@
 # the characters will also contain the other
 #
 
-from marvel import marvel, characters
-
 def create_weighted_graph(bipartiteG, characters):
     G = {}
-    # your code here
+    for char1 in characters:
+        for book in bipartiteG[char1]:
+            for char2 in bipartiteG[book]:
+                if char1 > char2:
+                    set1 = set(bipartiteG[char1])
+                    set2 = set(bipartiteG[char2])
+                    weight = 1.0*len(set1&set2)/len(set1|set2)
+                    make_link(G, char1, char2, weight)
     return G
+
+def make_link(G, node1, node2, weight):
+    if node1 not in G:
+        G[node1] = {}
+    (G[node1])[node2] = weight
+    if node2 not in G:
+        G[node2] = {}
+    (G[node2])[node1] = weight
+    return G
+
 
 ######
 #
@@ -32,9 +47,9 @@ def test():
     G = create_weighted_graph(bipartiteG, ['charA', 'charB', 'charC'])
     # three comics contain charA or charB
     # charA and charB are together in one of them
+    print G
     assert G['charA']['charB'] == 1.0 / 3
     assert G['charA'].get('charA') == None
     assert G['charA'].get('charC') == None
 
-def test2():
-    G = create_weighted_graph(marvel, characters)
+test()
